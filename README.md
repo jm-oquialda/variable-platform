@@ -1,36 +1,28 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# VAriable platform
 
-## Getting Started
+Next.js + Supabase app for VAriable: public site, client and talent portals, partner access and admin back office. The build brief is `../VAriable-platform-plan.docx`; working rules are in `CLAUDE.md`.
 
-First, run the development server:
+## Setup
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. `npm install`
+2. Create a Supabase project (owned by a VAriable account).
+3. In the Supabase SQL editor, run each file in `supabase/migrations/` in order. Or use the Supabase CLI: `npx supabase link` then `npx supabase db push`.
+4. Copy `.env.example` to `.env.local` and fill in the URL and anon key from Project Settings > API.
+5. In Supabase Auth > URL Configuration, add `http://localhost:3000/auth/callback` (and the production URL later) to the redirect URLs.
+6. `npm run dev`, open http://localhost:3000, sign in with your email.
+7. Make yourself admin in the SQL editor:
+   ```sql
+   update public.profiles set role = 'admin'
+   where id = (select id from auth.users where email = 'you@example.com');
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Scripts
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `npm run dev`: local server on port 3000
+- `npm run build`: production build
+- `npm run lint`: ESLint
+- `npm run test:rls`: applies the migrations to an in-memory Postgres and checks the row-level security rules (who can see talent rates, who can change roles, audit log)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Roles
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`admin`, `client`, `talent`, `partner`. Sign-up creates `client` or `talent` only. Admins grant `admin` and `partner`. Nobody can change their own role.
