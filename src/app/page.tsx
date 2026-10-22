@@ -190,7 +190,12 @@ export default function Home() {
         {/* Talent perks */}
         <section className="border-t border-line bg-band">
           <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-24">
-            <SectionTitle label="Why talent stay" title="Well-supported people stay." sub="That is continuity for you." />
+            <div className="flex flex-wrap items-end justify-between gap-6">
+              <SectionTitle label="Why talent stay" title="Well-supported people stay." sub="That is continuity for you." />
+              <Link href="/apply" className={btnSecondary}>
+                Apply as talent <span aria-hidden>→</span>
+              </Link>
+            </div>
             <ul className="mt-10 grid border-l border-t border-line bg-card sm:grid-cols-3">
               {TALENT_PERKS.map((p) => (
                 <li key={p.title} className="border-b border-r border-line p-6">
@@ -254,6 +259,9 @@ export default function Home() {
           <span className="flex gap-6">
             <Link href="/request" className="hover:text-ink">
               Request talent
+            </Link>
+            <Link href="/apply" className="hover:text-ink">
+              Apply as talent
             </Link>
             <Link href="/login" className="hover:text-ink">
               Sign in

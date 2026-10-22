@@ -13,6 +13,18 @@ const db = new PGlite();
 await db.exec(`
   create role anon nologin;
   create role authenticated nologin;
+  -- Minimal Supabase Storage tables and helper.
+  create schema storage;
+  create table storage.buckets (id text primary key, name text not null, public boolean default false,
+    file_size_limit bigint, allowed_mime_types text[]);
+  create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text references storage.buckets (id),
+    name text not null, owner uuid);
+  alter table storage.objects enable row level security;
+  create function storage.foldername(name text) returns text[] language sql immutable as
+    $$ select (string_to_array(name, '/'))[1:array_length(string_to_array(name, '/'), 1) - 1] $$;
+  grant usage on schema storage to anon, authenticated;
+  grant all on storage.objects to anon, authenticated;
+  grant execute on function storage.foldername(text) to anon, authenticated;
   create schema auth;
   create table auth.users (id uuid primary key, raw_user_meta_data jsonb not null default '{}');
   create function auth.uid() returns uuid language sql stable as
@@ -197,6 +209,55 @@ r = await as("client", `select * from public.questions`);
 check("client cannot read questions", r.rows?.length === 0, r);
 r = await as("admin", `update public.questions set handled = true returning id`);
 check("admin reads and handles questions", r.rows?.length === 1, r);
+
+// Talent profiles and resumes (migration 20261022010000)
+r = await as("t1", `insert into public.talent_profiles (talent_id, first_name, niche) values ('${U.t1}', 'Ana', 'executive-assistant') returning vetting_status`);
+check("talent creates own draft profile", r.rows?.[0]?.vetting_status === "draft", r);
+r = await as("t1", `insert into public.talent_profiles (talent_id) values ('${U.t2}')`);
+check("talent cannot create another talent's profile", !!r.error, r);
+r = await as("client", `insert into public.talent_profiles (talent_id) values ('${U.client}')`);
+check("client cannot create a talent profile", !!r.error, r);
+r = await as("t1", `update public.talent_profiles set vetting_status = 'submitted' where talent_id = '${U.t1}'`);
+check("cannot submit without privacy consent", !!r.error, r);
+r = await as("t1", `update public.talent_profiles set vetting_status = 'submitted', privacy_consent_at = now() where talent_id = '${U.t1}' returning submitted_at`);
+check("talent submits with consent and submitted_at is set", !!r.rows?.[0]?.submitted_at, r);
+r = await as("t1", `update public.talent_profiles set vetting_status = 'accepted' where talent_id = '${U.t1}'`);
+check("talent cannot accept themselves", !!r.error, r);
+r = await as("t1", `update public.talent_profiles set submitted_at = '2020-01-01' where talent_id = '${U.t1}' returning submitted_at`);
+check("talent cannot backdate submitted_at", r.rows?.[0] && !String(r.rows[0].submitted_at).startsWith("2020"), r);
+r = await as("t1", `update public.talent_profiles set headline = 'EA for founders' where talent_id = '${U.t1}' returning headline`);
+check("talent can keep editing after submitting", r.rows?.[0]?.headline === "EA for founders", r);
+r = await as("t2", `insert into public.talent_profiles (talent_id, vetting_status, privacy_consent_at) values ('${U.t2}', 'accepted', now())`);
+check("talent cannot create a profile already accepted", !!r.error, r);
+r = await as("t2", `insert into public.talent_profiles (talent_id, resume_path) values ('${U.t2}', '${U.t1}/cv.pdf')`);
+check("resume path must be in the talent's own folder", !!r.error, r);
+for (const who of ["client", "partner", "t2"]) {
+  r = await as(who, `select * from public.talent_profiles where talent_id = '${U.t1}'`);
+  check(`${who} cannot read another talent's profile`, r.rows?.length === 0, r);
+}
+r = await as("anon", `select * from public.talent_profiles`);
+check("visitors cannot query talent profiles", !!r.error, r);
+r = await as("admin", `update public.talent_profiles set vetting_status = 'screening' where talent_id = '${U.t1}' returning vetting_status`);
+check("admin moves a profile through vetting", r.rows?.[0]?.vetting_status === "screening", r);
+r = await as("admin", `select count(*)::int as n from public.audit_log where table_name = 'talent_profiles'`);
+check("vetting status changes are audited", r.rows?.[0]?.n >= 2, r);
+
+r = await as("t1", `insert into storage.objects (bucket_id, name) values ('resumes', '${U.t1}/cv.pdf')`);
+check("talent uploads a resume to own folder", !r.error, r);
+r = await as("t1", `insert into storage.objects (bucket_id, name) values ('resumes', '${U.t2}/cv.pdf')`);
+check("talent cannot upload into another folder", !!r.error, r);
+r = await as("client", `insert into storage.objects (bucket_id, name) values ('resumes', '${U.client}/cv.pdf')`);
+check("client cannot upload resumes", !!r.error, r);
+r = await as("client", `select name from storage.objects where bucket_id = 'resumes'`);
+check("client cannot see any resume", r.rows?.length === 0, r);
+r = await as("t2", `select name from storage.objects where bucket_id = 'resumes'`);
+check("talent cannot see another talent's resume", r.rows?.length === 0, r);
+r = await as("t1", `select name from storage.objects where bucket_id = 'resumes'`);
+check("talent sees own resume", r.rows?.length === 1, r);
+r = await as("admin", `select name from storage.objects where bucket_id = 'resumes'`);
+check("admin sees all resumes", r.rows?.length === 1, r);
+r = await db.query(`select public from storage.buckets where id = 'resumes'`);
+check("resume bucket is private", r.rows[0]?.public === false, r.rows);
 
 console.log(failed ? `\n${failed} check(s) failed` : "\nAll checks passed");
 process.exit(failed ? 1 : 0);

@@ -17,9 +17,10 @@ const choice =
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sent?: string; error?: string; next?: string }>;
+  searchParams: Promise<{ sent?: string; error?: string; next?: string; role?: string }>;
 }) {
-  const { sent, error, next } = await searchParams;
+  const { sent, error, next, role } = await searchParams;
+  const asTalent = role === "talent";
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-[radial-gradient(ellipse_at_top,#ededed_0%,#ffffff_55%)] px-4 py-16">
@@ -40,7 +41,7 @@ export default async function LoginPage({
           </>
         ) : (
           <form action={sendMagicLink}>
-            <h1 className="text-2xl font-semibold">Sign in.</h1>
+            <h1 className="text-2xl font-semibold">{asTalent ? "Apply as talent." : "Sign in."}</h1>
             <p className="mt-2 text-sm text-ink-mid">No password needed. VAriable emails you a sign-in link.</p>
 
             {error && ERRORS[error] && (
@@ -58,11 +59,11 @@ export default async function LoginPage({
               <legend className="text-sm font-medium">New here? I am</legend>
               <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
                 <label className={choice}>
-                  <input type="radio" name="role" value="client" defaultChecked className="accent-black" />
+                  <input type="radio" name="role" value="client" defaultChecked={!asTalent} className="accent-black" />
                   Hiring talent
                 </label>
                 <label className={choice}>
-                  <input type="radio" name="role" value="talent" className="accent-black" />
+                  <input type="radio" name="role" value="talent" defaultChecked={asTalent} className="accent-black" />
                   Applying as talent
                 </label>
               </div>
