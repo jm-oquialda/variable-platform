@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { btnPrimary, notice } from "@/components/ui";
 import { NICHES, nicheName } from "@/lib/niches";
 import { quote, resolveSettings } from "@/lib/pricing";
 import {
@@ -42,14 +43,14 @@ const ERRORS: Record<string, string> = {
   save: "Could not save. Try again.",
 };
 
-const input = "w-full rounded-md border border-line bg-card px-3 py-1.5 text-sm outline-none focus:border-accent";
-const button = "rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90";
+const input = "w-full rounded-lg border border-line bg-card px-3 py-1.5 text-sm outline-none transition focus:border-ink";
+const button = btnPrimary;
 const th = "px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-ink-mid";
 const td = "px-3 py-2 align-middle";
 
 function Section({ title, intro, children }: { title: string; intro: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-lg border border-line bg-card p-5 sm:p-6">
+    <section className="border border-line bg-card p-5 sm:p-7">
       <h2 className="text-lg font-semibold">{title}</h2>
       <p className="mt-1 text-sm text-ink-mid">{intro}</p>
       <div className="mt-4">{children}</div>
@@ -84,19 +85,19 @@ export default async function PricingPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Pricing</h1>
+        <h1 className="text-3xl font-semibold">Pricing.</h1>
         <p className="mt-1 text-sm text-ink-mid">
           Talent rates and margins on this page are admin only. Clients and visitors only ever see the calculated prices.
         </p>
       </div>
 
       {params.saved && SAVED[params.saved] && (
-        <p role="status" className="rounded-md bg-accent-bg px-4 py-2 text-sm text-accent">
+        <p role="status" className={notice}>
           {SAVED[params.saved]}
         </p>
       )}
       {params.error && ERRORS[params.error] && (
-        <p role="alert" className="rounded-md bg-alert-bg px-4 py-2 text-sm text-alert">
+        <p role="alert" className={notice}>
           {ERRORS[params.error]}
         </p>
       )}
@@ -161,7 +162,7 @@ export default async function PricingPage({
         </form>
         {!publishedAt && (
           <form action={republishTierPrices} className="mt-3">
-            <button type="submit" className="text-sm text-accent underline">
+            <button type="submit" className="text-sm underline">
               Publish current prices now
             </button>
           </form>
@@ -222,7 +223,7 @@ export default async function PricingPage({
                     <td className={`${td} text-right`}>
                       <form action={deleteOverride}>
                         <input type="hidden" name="id" value={r.id} />
-                        <button type="submit" className="text-sm text-alert underline">
+                        <button type="submit" className="text-sm text-ink-mid underline hover:text-ink">
                           Remove
                         </button>
                       </form>
@@ -293,25 +294,25 @@ export default async function PricingPage({
           </button>
         </form>
 
-        {params.rate && !check && <p className="mt-3 text-sm text-alert">Enter the rate in dollars, for example 800.</p>}
+        {params.rate && !check && <p className="mt-3 text-sm font-medium">Enter the rate in dollars, for example 800.</p>}
         {check && (
           <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-            <div className="rounded-md bg-background p-3">
+            <div className="border border-line bg-band p-4">
               <dt className="text-ink-mid">6-month price</dt>
               <dd className="mt-1 text-lg font-semibold">{formatCents(check.commitmentPriceCents)}</dd>
               <dd className="text-xs text-ink-mid">keeps {formatBps(check.commitmentMarginBps)}</dd>
             </div>
-            <div className="rounded-md bg-background p-3">
+            <div className="border border-line bg-band p-4">
               <dt className="text-ink-mid">Month to month</dt>
               <dd className="mt-1 text-lg font-semibold">{formatCents(check.standardPriceCents)}</dd>
               <dd className="text-xs text-ink-mid">keeps {formatBps(check.standardMarginBps)}</dd>
             </div>
-            <div className="rounded-md bg-background p-3">
+            <div className="border border-line bg-band p-4">
               <dt className="text-ink-mid">VAriable keeps / mo</dt>
               <dd className="mt-1 text-lg font-semibold">{formatCents(check.commitmentPriceCents - check.rateCents)}</dd>
               <dd className="text-xs text-ink-mid">on the 6-month price</dd>
             </div>
-            <div className="rounded-md bg-background p-3">
+            <div className="border border-line bg-band p-4">
               <dt className="text-ink-mid">Rule used</dt>
               <dd className="mt-1 text-sm">
                 {formatBps(check.targetMarginBps, 2)} margin, {bpsToMultiplier(check.standardUpliftBps)}x, round to{" "}

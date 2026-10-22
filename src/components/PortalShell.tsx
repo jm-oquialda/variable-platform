@@ -20,14 +20,14 @@ export function PortalShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-line bg-card">
+    <div className="min-h-screen bg-band">
+      <header className="sticky top-0 z-30 border-b border-line bg-white/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-3">
             <Link href="/app" className="font-semibold tracking-tight">
               VAriable
             </Link>
-            <span className="rounded-full bg-accent-bg px-2 py-0.5 text-xs font-medium text-accent">
+            <span className="border border-line px-2 py-0.5 text-[11px] font-medium uppercase tracking-[0.12em] text-ink-mid">
               {ROLE_LABEL[user.role]}
             </span>
             {nav.length > 0 && (
@@ -57,7 +57,7 @@ export function PortalShell({
 
 export function ComingNext({ title, items }: { title: string; items: string[] }) {
   return (
-    <section className="rounded-lg border border-line bg-card p-6">
+    <section className="border border-line bg-card p-6">
       <h1 className="text-xl font-semibold">{title}</h1>
       <p className="mt-2 text-sm text-ink-mid">Coming in Phase 1:</p>
       <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">

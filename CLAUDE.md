@@ -68,7 +68,8 @@ Finish and verify each step before starting the next.
 ## Copy and design
 
 - Tone: confident and warm. Never "just a VA" or "cheap help". Sell leverage, speed and reclaimed time
-- Branding (logo, colors, fonts) is not decided. Use the neutral placeholder tokens in `src/app/globals.css` and change them in one place when branding lands
+- Design direction: monochrome and Apple-like, modelled on aiinsiders.us. Black, white and grays only, no accent color. Inter with tight tracking, headings weight 600, two-tone hero headline (second line gray). Black pill primary buttons and outlined pill secondary buttons with a → arrow. Small uppercase tracked eyebrow labels above section titles. Square cards with 1px `#e6e6e6` hairlines, white and `#fafafa` section bands, generous whitespace, sticky translucent header
+- Colors and fonts live as tokens in `src/app/globals.css`; shared button, input and label classes live in `src/components/ui.ts`. Use those instead of restyling per page. Logo is not decided yet
 - Any price or claim not yet confirmed by Jhona is marked as a placeholder in code (`// TODO(confirm)`), never presented as final. "Top 1%" is only shown when the funnel stats back it
 
 ## Definition of done

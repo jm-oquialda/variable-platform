@@ -6,7 +6,7 @@ export default function AdminHome() {
     <div className="space-y-6">
       <Link
         href="/admin/pricing"
-        className="block rounded-lg border border-line bg-card p-6 hover:border-accent"
+        className="block border border-line bg-card p-6 transition hover:border-ink"
       >
         <h2 className="text-lg font-semibold">Pricing</h2>
         <p className="mt-1 text-sm text-ink-mid">
