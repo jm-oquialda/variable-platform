@@ -70,7 +70,7 @@ export function marginBps(priceCents: number, rateCents: number) {
   return Math.floor(((priceCents - rateCents) * BPS) / priceCents);
 }
 
-function validateSettings(s: PricingSettings) {
+export function validateSettings(s: PricingSettings) {
   if (!Number.isInteger(s.targetMarginBps) || s.targetMarginBps < 0 || s.targetMarginBps >= BPS) {
     throw new RangeError(`targetMarginBps must be 0 to 9999, got ${s.targetMarginBps}`);
   }

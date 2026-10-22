@@ -1,9 +1,14 @@
 import Link from "next/link";
+import { PublicPricing } from "@/components/PublicPricing";
+
+// Cached, refreshed hourly and immediately when admin saves pricing
+// (revalidatePath("/") in admin/pricing/actions.ts).
+export const revalidate = 3600;
 
 // Placeholder. The real landing page is Phase 1, step 4.
 export default function Home() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center px-6 py-16">
+    <main className="mx-auto max-w-4xl px-6 py-16 sm:py-24">
       <p className="text-sm font-medium text-accent">VAriable</p>
       <h1 className="mt-3 text-4xl font-semibold tracking-tight">
         Executive Assistants and AI-trained specialists from the Philippines, hand-picked for US teams.
@@ -16,6 +21,7 @@ export default function Home() {
           Sign in or get started
         </Link>
       </div>
+      <PublicPricing />
     </main>
   );
 }

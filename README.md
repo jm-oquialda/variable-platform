@@ -15,6 +15,7 @@ Next.js + Supabase app for VAriable: public site, client and talent portals, par
    update public.profiles set role = 'admin'
    where id = (select id from auth.users where email = 'you@example.com');
    ```
+8. Open `/admin/pricing`, confirm the tier minimum rates and add-on prices (the starting values are the plan's illustrative ones), and press **Save and publish**. The home page shows no prices until then.
 
 ## Scripts
 

@@ -114,5 +114,43 @@ check("rate changes are audited with the actor",
 check("role changes are audited",
   log.some((x) => x.table_name === "profiles" && x.actor_id === U.admin), log);
 
+// Pricing settings (migration 20261021010000)
+r = await as("anon", `select slug, name from public.tiers order by sort_order`);
+check("visitors can read tier names and published prices", r.rows?.length === 3, r);
+r = await as("anon", `select slug from public.addon_packages`);
+check("visitors can read add-on packages", r.rows?.length === 3, r);
+r = await as("anon", `select * from public.tier_min_rates`);
+check("visitors cannot query tier minimum rates", !!r.error, r);
+r = await as("anon", `select * from public.pricing_rules`);
+check("visitors cannot query pricing rules", !!r.error, r);
+for (const who of ["client", "t1", "partner"]) {
+  r = await as(who, `select * from public.tier_min_rates`);
+  check(`${who} sees no tier minimum rates`, r.rows?.length === 0, r);
+  r = await as(who, `select * from public.pricing_rules`);
+  check(`${who} sees no pricing rules`, r.rows?.length === 0, r);
+}
+r = await as("client", `update public.tiers set commitment_price_cents = 100 returning slug`);
+check("client cannot change published prices", r.rows?.length === 0 || !!r.error, r);
+r = await as("anon", `update public.addon_packages set setup_cents = 100 returning slug`);
+check("visitor cannot change add-on prices", r.rows?.length === 0 || !!r.error, r);
+r = await as("admin", `select min_monthly_rate_cents from public.tier_min_rates order by tier_slug`);
+check("admin reads tier minimum rates", r.rows?.length === 3, r);
+r = await as("admin", `update public.tiers set commitment_price_cents = 145500, standard_price_cents = 175000, prices_published_at = now() where slug = 'essentials' returning slug`);
+check("admin publishes tier prices", r.rows?.length === 1, r);
+r = await as("admin", `insert into public.pricing_rules (scope, scope_id, target_margin_bps) values ('role', 'developer', 4000) returning id`);
+check("admin adds a role override", r.rows?.length === 1, r);
+r = await as("admin", `insert into public.pricing_rules (scope, scope_id, target_margin_bps) values ('role', 'developer', 3900) returning id`);
+check("only one override per role", !!r.error, r);
+r = await as("admin", `insert into public.pricing_rules (scope, target_margin_bps) values ('role', 4000) returning id`);
+check("an override needs a target", !!r.error, r);
+r = await as("admin", `insert into public.pricing_rules (scope, target_margin_bps, standard_uplift_bps, rounding_step_cents) values ('global', 4000, 12000, 500) returning id`);
+check("only one global rule", !!r.error, r);
+r = await as("admin", `update public.pricing_rules set target_margin_bps = 10000 where scope = 'global' returning id`);
+check("margin of 100% or more is rejected", !!r.error, r);
+r = await as("admin", `delete from public.pricing_rules where scope = 'global'`);
+check("global rule cannot be deleted", !!r.error, r);
+r = await as("admin", `select table_name from public.audit_log where table_name in ('pricing_rules', 'tiers')`);
+check("pricing changes are audited", r.rows?.some((x) => x.table_name === "pricing_rules") && r.rows?.some((x) => x.table_name === "tiers"), r);
+
 console.log(failed ? `\n${failed} check(s) failed` : "\nAll checks passed");
 process.exit(failed ? 1 : 0);

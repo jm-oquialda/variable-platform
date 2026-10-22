@@ -8,7 +8,17 @@ const ROLE_LABEL: Record<CurrentUser["role"], string> = {
   partner: "Partner portal",
 };
 
-export function PortalShell({ user, children }: { user: CurrentUser; children: React.ReactNode }) {
+export type NavLink = { href: string; label: string };
+
+export function PortalShell({
+  user,
+  nav = [],
+  children,
+}: {
+  user: CurrentUser;
+  nav?: NavLink[];
+  children: React.ReactNode;
+}) {
   return (
     <div className="min-h-screen">
       <header className="border-b border-line bg-card">
@@ -20,6 +30,15 @@ export function PortalShell({ user, children }: { user: CurrentUser; children: R
             <span className="rounded-full bg-accent-bg px-2 py-0.5 text-xs font-medium text-accent">
               {ROLE_LABEL[user.role]}
             </span>
+            {nav.length > 0 && (
+              <nav className="ml-2 flex gap-4 text-sm">
+                {nav.map((link) => (
+                  <Link key={link.href} href={link.href} className="text-ink-mid hover:text-ink">
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
+            )}
           </div>
           <div className="flex items-center gap-4 text-sm">
             <span className="hidden text-ink-mid sm:inline">{user.email}</span>

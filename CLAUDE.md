@@ -57,7 +57,7 @@ These come from the plan and are not negotiable.
 
 1. Scaffold, auth with roles, RLS (done: see `supabase/migrations/`)
 2. Pricing function with unit tests (done: `src/lib/pricing/`. Cents and basis points only. Use `quote()` and `resolveSettings()`; never reimplement the formula elsewhere)
-3. Admin pricing settings; public "starting at" prices calculated from tier minimum rates
+3. Admin pricing settings; public "starting at" prices calculated from tier minimum rates (done: `/admin/pricing`. `tier_min_rates` and `pricing_rules` are admin only; `tiers` and `addon_packages` hold only published prices and are public. Public pages read them with `createPublicClient()` so they stay cacheable; admin saves call `revalidatePath("/")`)
 4. Landing page and request form
 5. Talent sign-up and profile
 6. Admin vetting queue and funnel stats (including past applicant counts)
