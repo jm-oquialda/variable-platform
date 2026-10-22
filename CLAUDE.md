@@ -56,7 +56,7 @@ These come from the plan and are not negotiable.
 ## Phase 1 build order
 
 1. Scaffold, auth with roles, RLS (done: see `supabase/migrations/`)
-2. Pricing function with unit tests
+2. Pricing function with unit tests (done: `src/lib/pricing/`. Cents and basis points only. Use `quote()` and `resolveSettings()`; never reimplement the formula elsewhere)
 3. Admin pricing settings; public "starting at" prices calculated from tier minimum rates
 4. Landing page and request form
 5. Talent sign-up and profile
@@ -73,7 +73,7 @@ Finish and verify each step before starting the next.
 
 ## Definition of done
 
-- `npm run build` and `npm run lint` pass, no console errors in `npm run dev`
+- `npm test`, `npm run test:rls`, `npm run build` and `npm run lint` pass, no console errors in `npm run dev`
 - New tables have RLS and policies in the same migration
 - No talent rate or margin reachable by a client or partner session
 - Secrets only in `.env.local`, never committed. `.env.example` lists every variable

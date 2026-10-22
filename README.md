@@ -21,6 +21,7 @@ Next.js + Supabase app for VAriable: public site, client and talent portals, par
 - `npm run dev`: local server on port 3000
 - `npm run build`: production build
 - `npm run lint`: ESLint
+- `npm test`: unit tests, including the pricing function checked against the plan's price tables
 - `npm run test:rls`: applies the migrations to an in-memory Postgres and checks the row-level security rules (who can see talent rates, who can change roles, audit log)
 
 ## Roles
