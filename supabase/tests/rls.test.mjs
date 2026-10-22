@@ -152,5 +152,51 @@ check("global rule cannot be deleted", !!r.error, r);
 r = await as("admin", `select table_name from public.audit_log where table_name in ('pricing_rules', 'tiers')`);
 check("pricing changes are audited", r.rows?.some((x) => x.table_name === "pricing_rules") && r.rows?.some((x) => x.table_name === "tiers"), r);
 
+// Requests and questions (migration 20261022000000)
+const req = (cols = "", vals = "") => `insert into public.talent_requests
+  (contact_name, contact_email, company, niche, tasks, schedule, time_zone, commitment${cols})
+  values ('Pat', 'pat@acme.com', 'Acme', 'executive-assistant', 'Inbox and calendar', 'full_time', 'pacific', 'six_month'${vals})`;
+r = await as("anon", req());
+check("visitor can submit a talent request", !r.error, r);
+r = await as("anon", req(", status", ", 'placed'"));
+check("visitor cannot set request status", !!r.error, r);
+r = await as("anon", req(", client_id", `, '${U.client}'`));
+check("visitor cannot attach a request to a client", !!r.error, r);
+r = await as("client", req(", client_id", `, '${U.client}'`));
+check("client submits a request as themselves", !r.error, r);
+r = await as("client", req(", client_id", `, '${U.t1}'`));
+check("client cannot submit as someone else", !!r.error, r);
+r = await as("client", req(", status, admin_notes, source", ", 'placed', 'x', 'partner'"));
+check("client's admin fields are reset", !r.error, r);
+r = await db.query(`select count(*)::int as n from public.talent_requests where status <> 'new' or admin_notes is not null or source <> 'website'`);
+check("no submitter-set status, notes or source got through", r.rows[0].n === 0, r.rows);
+r = await as("anon", `select * from public.talent_requests`);
+check("visitor cannot read requests", (r.rows?.length ?? 0) === 0, r);
+r = await as("client", `select client_id from public.talent_requests`);
+check("client reads only own requests", r.rows?.length === 1 && r.rows.every((x) => x.client_id === U.client), r);
+r = await as("t1", `select * from public.talent_requests`);
+check("talent cannot read requests", r.rows?.length === 0, r);
+r = await as("client", `update public.talent_requests set status = 'placed' returning id`);
+check("client cannot update requests", (r.rows?.length ?? 0) === 0 || !!r.error, r);
+r = await as("admin", `select id from public.talent_requests`);
+check("admin reads all requests", r.rows?.length === 3, r);
+r = await as("admin", req(", source, partner_name, status", ", 'partner', 'Flextroops', 'matching'"));
+check("admin enters a partner request", !r.error, r);
+r = await db.query(`select count(*)::int as n from public.talent_requests where source = 'partner' and partner_name = 'Flextroops' and status = 'matching'`);
+check("admin fields kept for admin", r.rows[0].n === 1, r.rows);
+r = await as("admin", `update public.talent_requests set status = 'matching' where client_id = '${U.client}' returning id`);
+check("admin updates request status", r.rows?.length === 1, r);
+r = await as("anon", req("", "").replace("pat@acme.com", "not-an-email"));
+check("invalid email rejected by the database", !!r.error, r);
+
+r = await as("anon", `insert into public.questions (name, email, message) values ('Sam', 'sam@x.co', 'Do you cover Eastern time?')`);
+check("visitor can ask a question", !r.error, r);
+r = await as("anon", `insert into public.questions (name, email, message, handled) values ('Sam', 'sam@x.co', 'x', true)`);
+check("visitor cannot mark a question handled", !!r.error, r);
+r = await as("client", `select * from public.questions`);
+check("client cannot read questions", r.rows?.length === 0, r);
+r = await as("admin", `update public.questions set handled = true returning id`);
+check("admin reads and handles questions", r.rows?.length === 1, r);
+
 console.log(failed ? `\n${failed} check(s) failed` : "\nAll checks passed");
 process.exit(failed ? 1 : 0);

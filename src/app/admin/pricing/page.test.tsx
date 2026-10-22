@@ -126,7 +126,7 @@ describe("public pricing block", () => {
     expect(html).toContain("$1,455");
     expect(html).toContain("$2,840");
     expect(html).toContain("Save about 17%");
-    expect(html).toContain("from $1,500 setup + $200/mo upkeep");
+    expect(html).toContain("from $1,500 setup");
   });
 
   it("never shows a talent rate or margin", async () => {

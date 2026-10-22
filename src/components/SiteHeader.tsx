@@ -1,5 +1,12 @@
 import Link from "next/link";
 
+const NAV = [
+  { href: "/#roles", label: "Roles" },
+  { href: "/#how", label: "How it works" },
+  { href: "/#pricing", label: "Pricing" },
+  { href: "/#faq", label: "FAQ" },
+];
+
 // Public site header: sticky, translucent, hairline bottom border.
 export function SiteHeader() {
   return (
@@ -9,17 +16,16 @@ export function SiteHeader() {
           VAriable
         </Link>
         <nav className="flex items-center gap-5 text-sm sm:gap-7">
-          <Link href="/#how" className="hidden text-ink-mid hover:text-ink sm:inline">
-            How it works
-          </Link>
-          <Link href="/#pricing" className="hidden text-ink-mid hover:text-ink sm:inline">
-            Pricing
-          </Link>
+          {NAV.map((link) => (
+            <Link key={link.href} href={link.href} className="hidden text-ink-mid hover:text-ink md:inline">
+              {link.label}
+            </Link>
+          ))}
           <Link href="/login" className="text-ink-mid hover:text-ink">
             Sign in
           </Link>
           <Link
-            href="/login"
+            href="/request"
             className="border border-line px-4 py-1.5 text-xs font-medium transition hover:border-ink"
           >
             Request talent

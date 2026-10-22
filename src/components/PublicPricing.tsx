@@ -56,10 +56,9 @@ export async function PublicPricing() {
         {starter && (
           <p className="mt-6 text-sm">
             <span className="font-medium">Custom AI Agent Build add-on:</span>{" "}
-            <span className="text-ink-mid">
+            <a href="#ai-agents" className="text-ink-mid underline hover:text-ink">
               from {formatCents(starter.setup_cents!)} setup
-              {starter.monthly_cents ? ` + ${formatCents(starter.monthly_cents)}/mo upkeep` : ""}.
-            </span>
+            </a>
           </p>
         )}
       </div>

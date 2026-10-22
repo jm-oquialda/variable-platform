@@ -58,7 +58,7 @@ These come from the plan and are not negotiable.
 1. Scaffold, auth with roles, RLS (done: see `supabase/migrations/`)
 2. Pricing function with unit tests (done: `src/lib/pricing/`. Cents and basis points only. Use `quote()` and `resolveSettings()`; never reimplement the formula elsewhere)
 3. Admin pricing settings; public "starting at" prices calculated from tier minimum rates (done: `/admin/pricing`. `tier_min_rates` and `pricing_rules` are admin only; `tiers` and `addon_packages` hold only published prices and are public. Public pages read them with `createPublicClient()` so they stay cacheable; admin saves call `revalidatePath("/")`)
-4. Landing page and request form
+4. Landing page and request form (done: landing copy in `src/content/landing.ts`, form at `/request`, questions form on the landing page, read-only `/admin/requests`, client portal lists own requests. Anyone can insert into `talent_requests` and `questions`, only form columns are granted, admin fields are reset by trigger for non-admins. Request emails to Jhona are not wired yet: needs Resend)
 5. Talent sign-up and profile
 6. Admin vetting queue and funnel stats (including past applicant counts)
 7. One-time Sheets import, then review with 2 clients and 5 talent
@@ -71,6 +71,11 @@ Finish and verify each step before starting the next.
 - Design direction: monochrome and Apple-like, modelled on aiinsiders.us. Black, white and grays only, no accent color. Inter with tight tracking, headings weight 600, two-tone hero headline (second line gray). Black pill primary buttons and outlined pill secondary buttons with a → arrow. Small uppercase tracked eyebrow labels above section titles. Square cards with 1px `#e6e6e6` hairlines, white and `#fafafa` section bands, generous whitespace, sticky translucent header
 - Colors and fonts live as tokens in `src/app/globals.css`; shared button, input and label classes live in `src/components/ui.ts`. Use those instead of restyling per page. Logo is not decided yet
 - Any price or claim not yet confirmed by Jhona is marked as a placeholder in code (`// TODO(confirm)`), never presented as final. "Top 1%" is only shown when the funnel stats back it
+
+## Working notes
+
+- Stop the dev server before `npm run build`: both write `.next/`, and a build under a running dev server breaks it with 404s
+- Forms use `useActionState` and remount on an `attempt` counter (`key={state.attempt}`), because React 19's form reset does not restore `<select>` defaults
 
 ## Definition of done
 
