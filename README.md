@@ -1,6 +1,6 @@
 # VAriable platform
 
-Next.js + Supabase app for VAriable: public site, client and talent portals, partner access and admin back office. The build brief is `../VAriable-platform-plan.docx`; working rules are in `CLAUDE.md`.
+Next.js + Supabase app for VAriable: public site, client and talent portals, partner access and admin back office. The build brief is `docs/VAriable-platform-plan.docx`; working rules are in `CLAUDE.md`.
 
 ## Setup
 

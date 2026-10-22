@@ -8,7 +8,7 @@ Project: VAriable platform. Owner: Jhona Oquialda, founder of VAriable.
 
 ## The spec
 
-`../VAriable-platform-plan.docx` (revision 3, October 21, 2026) is the build brief. Read the relevant section before starting a feature. If the code and the plan disagree, ask before deviating.
+`docs/VAriable-platform-plan.docx` (revision 3, October 21, 2026) is the build brief. Read the relevant section before starting a feature. If the code and the plan disagree, ask before deviating.
 
 ## What this is
 
