@@ -10,6 +10,9 @@ export type TalentProfileRow = TalentProfileInput & {
   vetting_status: string;
   submitted_at: string | null;
   privacy_consent_at: string | null;
+  // Admin-facing; not selected for the talent's own pages.
+  privacy_consent_source?: "platform" | "application_form" | null;
+  external_ref?: string | null;
 };
 
 const COLUMNS =

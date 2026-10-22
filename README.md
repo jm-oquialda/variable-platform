@@ -17,6 +17,23 @@ Next.js + Supabase app for VAriable: public site, client and talent portals, par
    ```
 8. Open `/admin/pricing`, confirm the tier minimum rates and add-on prices (the starting values are the plan's illustrative ones), and press **Save and publish**. The home page shows no prices until then.
 
+## Importing existing talent from Google Sheets
+
+1. In the sheet, File > Download > Comma-separated values (.csv). Keep the column names as they are.
+2. Dry run, which writes nothing and lists errors, warnings and how roles and statuses will map:
+   ```bash
+   npm run import:talent -- path/to/talent.csv
+   ```
+3. Fix any rows with errors in the sheet and export again.
+4. Add `SUPABASE_SERVICE_ROLE_KEY` to `.env.local` (Supabase: Project Settings > API), then import:
+   ```bash
+   npm run import:talent -- path/to/talent.csv --commit --consent-from-form
+   ```
+   Only use `--consent-from-form` if applicants agreed to VAriable storing their details when they applied.
+5. Remove the service role key from `.env.local` when you are done.
+
+Running it again skips anyone already imported. No emails are sent; imported talent sign in with a magic link. Resumes on Google Drive are not copied (the link is kept in the admin notes). Do not also enter imported applicants as past counts on the Funnel page.
+
 ## Scripts
 
 - `npm run dev`: local server on port 3000

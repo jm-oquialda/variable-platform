@@ -139,7 +139,13 @@ export default async function ApplicantPage({
                   <span className="text-ink-soft">Not uploaded</span>
                 )}
               </Row>
-              <Row label="Privacy consent">{p.privacy_consent_at ? formatPacific(p.privacy_consent_at) + " PT" : "Not given"}</Row>
+              <Row label="Privacy consent">
+                {p.privacy_consent_at ? `${formatPacific(p.privacy_consent_at)} PT` : "Not given"}
+                {p.privacy_consent_source === "application_form" && (
+                  <span className="text-ink-mid"> · from the original application form</span>
+                )}
+              </Row>
+              {p.external_ref && <Row label="Sheet ID">{p.external_ref}</Row>}
             </dl>
             {p.summary && (
               <div className="mt-4 border-t border-line pt-4">

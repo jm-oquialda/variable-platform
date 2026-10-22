@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test:rls": "node supabase/tests/rls.test.mjs supabase/migrations",
-    "test": "vitest run"
+    "test": "vitest run",
+    "import:talent": "vite-node scripts/import-talent.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -28,6 +29,7 @@
     "eslint-config-next": "15.5.4",
     "tailwindcss": "^4",
     "typescript": "^5",
+    "vite-node": "^3.2.4",
     "vitest": "^3.2.7"
   }
 }

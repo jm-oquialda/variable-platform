@@ -13,6 +13,7 @@ const db = new PGlite();
 await db.exec(`
   create role anon nologin;
   create role authenticated nologin;
+  create role service_role nologin bypassrls;
   -- Minimal Supabase Storage tables and helper.
   create schema storage;
   create table storage.buckets (id text primary key, name text not null, public boolean default false,
@@ -34,6 +35,10 @@ await db.exec(`
   -- Supabase grants table access to these roles by default; RLS does the rest.
   alter default privileges in schema public grant all on tables to anon, authenticated;
   alter default privileges in schema public grant all on sequences to anon, authenticated;
+  alter default privileges in schema public grant all on tables to service_role;
+  alter default privileges in schema public grant all on sequences to service_role;
+  grant usage on schema public, auth to service_role;
+  grant execute on function auth.uid() to service_role;
 `);
 await db.exec(migration);
 
@@ -53,8 +58,9 @@ await db.exec(`
 `);
 
 async function as(who, sql) {
-  await db.exec(`set role ${who === "anon" ? "anon" : "authenticated"}`);
-  await db.query(`select set_config('request.jwt.claim.sub', $1, false)`, [who === "anon" ? "" : U[who]]);
+  const dbRole = who === "anon" ? "anon" : who === "service" ? "service_role" : "authenticated";
+  await db.exec(`set role ${dbRole}`);
+  await db.query(`select set_config('request.jwt.claim.sub', $1, false)`, [U[who] ?? ""]);
   try {
     return { rows: (await db.query(sql)).rows };
   } catch (e) {
@@ -309,6 +315,45 @@ r = await as("client", `select * from public.historical_funnel_counts`);
 check("client cannot read past counts", r.rows?.length === 0, r);
 r = await as("anon", `select * from public.historical_funnel_counts`);
 check("visitors cannot query past counts", !!r.error, r);
+
+// Talent import (migration 20261023000000)
+const IMP = "00000000-0000-0000-0000-00000000000a";
+U.imp = IMP;
+await db.exec(`insert into auth.users (id, raw_user_meta_data, email) values ('${IMP}', '{"role":"talent"}', 'maria@x.co')`);
+r = await as("service", `insert into public.talent_profiles (talent_id, first_name, external_ref, privacy_consent_at, privacy_consent_source)
+  values ('${IMP}', 'Maria', 'VAR-0001', '2026-03-10T00:00:00+08', 'application_form') returning talent_id`);
+check("import creates a draft with the sheet ID and form consent", r.rows?.length === 1, r);
+r = await as("service", `select public.import_talent_history('${IMP}', 'interview', '2026-03-10T00:00:00+08', '2026-03-20T00:00:00+08')`);
+check("import sets history with real dates", !r.error, r);
+r = await as("admin", `select to_status, created_at, note from public.vetting_events where talent_id = '${IMP}' order by created_at`);
+check("imported history is backdated",
+  r.rows?.length === 2 &&
+  r.rows[0].to_status === "submitted" && new Date(r.rows[0].created_at).toISOString() === "2026-03-09T16:00:00.000Z" &&
+  r.rows[1].to_status === "interview" && new Date(r.rows[1].created_at).toISOString() === "2026-03-19T16:00:00.000Z" &&
+  r.rows[0].note === "Imported from Google Sheets", r);
+r = await as("admin", `select submitted_at, vetting_status from public.talent_profiles where talent_id = '${IMP}'`);
+check("imported submitted_at is the application date",
+  new Date(r.rows?.[0]?.submitted_at).toISOString() === "2026-03-09T16:00:00.000Z" && r.rows[0].vetting_status === "interview", r);
+r = await as("service", `select public.import_talent_history('${IMP}', 'accepted', now(), now())`);
+check("history cannot be imported twice", !!r.error, r);
+for (const who of ["admin", "t1", "anon"]) {
+  r = await as(who, `select public.import_talent_history('${IMP}', 'accepted', now(), now())`);
+  check(`${who} cannot call the import function`, !!r.error, r);
+}
+r = await as("service", `insert into public.talent_profiles (talent_id, external_ref) values ('${U.partner}', 'VAR-0001')`);
+check("sheet IDs are unique", !!r.error, r);
+r = await as("imp", `update public.talent_profiles set external_ref = 'X', privacy_consent_source = 'platform' where talent_id = '${IMP}' returning external_ref, privacy_consent_source`);
+check("talent cannot change their sheet ID or consent source",
+  r.rows?.[0]?.external_ref === "VAR-0001" && r.rows[0].privacy_consent_source === "application_form", r);
+await db.exec(`insert into auth.users (id, raw_user_meta_data, email) values ('00000000-0000-0000-0000-00000000000b', '{"role":"talent"}', 'n@x.co')`);
+U.newbie = "00000000-0000-0000-0000-00000000000b";
+r = await as("newbie", `insert into public.talent_profiles (talent_id, vetting_status, privacy_consent_at) values ('${U.newbie}', 'submitted', now()) returning privacy_consent_source, submitted_at`);
+check("consent given on the platform is marked as platform", r.rows?.[0]?.privacy_consent_source === "platform" && !!r.rows[0].submitted_at, r);
+await db.query(`select set_config('app.vetting_event_at', '2020-01-01', false)`);
+r = await as("admin", `select public.set_vetting_status('${U.newbie}', 'screening')`);
+await db.query(`select set_config('app.vetting_event_at', '', false)`);
+r = await as("admin", `select created_at from public.vetting_events where talent_id = '${U.newbie}' and to_status = 'screening'`);
+check("signed-in users cannot backdate events", r.rows?.[0] && new Date(r.rows[0].created_at).getUTCFullYear() !== 2020, r);
 
 console.log(failed ? `\n${failed} check(s) failed` : "\nAll checks passed");
 process.exit(failed ? 1 : 0);
