@@ -4,6 +4,8 @@ import { requireRole } from "@/lib/auth";
 const NAV: NavLink[] = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/requests", label: "Requests" },
+  { href: "/admin/vetting", label: "Vetting" },
+  { href: "/admin/funnel", label: "Funnel" },
   { href: "/admin/pricing", label: "Pricing" },
 ];
 

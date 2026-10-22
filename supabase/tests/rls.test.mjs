@@ -26,7 +26,7 @@ await db.exec(`
   grant all on storage.objects to anon, authenticated;
   grant execute on function storage.foldername(text) to anon, authenticated;
   create schema auth;
-  create table auth.users (id uuid primary key, raw_user_meta_data jsonb not null default '{}');
+  create table auth.users (id uuid primary key, raw_user_meta_data jsonb not null default '{}', email text);
   create function auth.uid() returns uuid language sql stable as
     $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
   grant usage on schema public, auth to anon, authenticated;
@@ -258,6 +258,57 @@ r = await as("admin", `select name from storage.objects where bucket_id = 'resum
 check("admin sees all resumes", r.rows?.length === 1, r);
 r = await db.query(`select public from storage.buckets where id = 'resumes'`);
 check("resume bucket is private", r.rows[0]?.public === false, r.rows);
+
+// Vetting and funnel (migration 20261022020000)
+const NEW_USER = "00000000-0000-0000-0000-000000000009";
+await db.exec(`insert into auth.users (id, raw_user_meta_data, email) values ('${NEW_USER}', '{"role":"talent"}', 'new@x.co')`);
+r = await db.query(`select email from public.profiles where id = '${NEW_USER}'`);
+check("new sign-ups get their email copied to profiles", r.rows[0]?.email === "new@x.co", r.rows);
+r = await as("client", `update public.profiles set email = 'spoof@x.co' where id = '${U.client}' returning email`);
+check("users cannot change their own profile email", r.rows?.[0]?.email !== "spoof@x.co", r);
+r = await as("admin", `select from_status, to_status, actor_id from public.vetting_events where talent_id = '${U.t1}' order by id`);
+check("submitting and screening are logged as vetting events",
+  r.rows?.length === 2 && r.rows[0].to_status === "submitted" && r.rows[0].actor_id === U.t1 &&
+  r.rows[1].from_status === "submitted" && r.rows[1].to_status === "screening" && r.rows[1].actor_id === U.admin, r);
+r = await as("t1", `select * from public.vetting_events`);
+check("talent cannot read vetting events", r.rows?.length === 0, r);
+r = await as("admin", `insert into public.vetting_events (talent_id, to_status) values ('${U.t1}', 'accepted')`);
+check("nobody writes vetting events directly", !!r.error, r);
+r = await as("admin", `select public.set_vetting_status('${U.t1}', 'interview', 'Strong screening call')`);
+check("admin changes status with a note", !r.error, r);
+r = await as("admin", `select to_status, note from public.vetting_events where talent_id = '${U.t1}' order by id desc limit 1`);
+check("the note lands on the event", r.rows?.[0]?.to_status === "interview" && r.rows[0].note === "Strong screening call", r);
+r = await as("admin", `select public.set_vetting_status('${U.t1}', 'accepted')`);
+r = await as("admin", `select note from public.vetting_events where talent_id = '${U.t1}' order by id desc limit 1`);
+check("a later change without a note has no note", r.rows?.[0]?.note === null, r);
+r = await as("t1", `select public.set_vetting_status('${U.t1}', 'accepted')`);
+check("talent cannot use set_vetting_status", !!r.error, r);
+r = await as("admin", `select public.set_vetting_status('${U.t1}', 'astronaut')`);
+check("invalid status is rejected", !!r.error, r);
+r = await as("t2", `insert into public.talent_profiles (talent_id, vetting_status, privacy_consent_at) values ('${U.t2}', 'submitted', now())`);
+check("first save that submits directly is allowed", !r.error, r);
+r = await as("admin", `select to_status, from_status from public.vetting_events where talent_id = '${U.t2}'`);
+check("a direct submit is logged too", r.rows?.length === 1 && r.rows[0].to_status === "submitted" && r.rows[0].from_status === null, r);
+
+r = await as("admin", `insert into public.vetting_scorecards (talent_id, communication, role_skills, notes) values ('${U.t1}', 5, 4, 'Clear, fast') returning talent_id`);
+check("admin writes a scorecard", r.rows?.length === 1, r);
+r = await as("admin", `insert into public.vetting_scorecards (talent_id, communication) values ('${U.t2}', 6)`);
+check("scores above 5 are rejected", !!r.error, r);
+for (const who of ["t1", "client"]) {
+  r = await as(who, `select * from public.vetting_scorecards`);
+  check(`${who} cannot read scorecards`, r.rows?.length === 0, r);
+}
+
+r = await as("admin", `insert into public.historical_funnel_counts (month, source, applied, screened, accepted) values ('2026-03-01', 'OnlineJobs.ph', 400, 120, 6) returning month`);
+check("admin enters past applicant counts", r.rows?.length === 1, r);
+r = await as("admin", `insert into public.historical_funnel_counts (month, source, applied) values ('2026-03-15', 'Referral', 10)`);
+check("past counts must be for the first of a month", !!r.error, r);
+r = await as("admin", `insert into public.historical_funnel_counts (month, source, applied, accepted) values ('2026-04-01', 'Referral', 10, 11)`);
+check("accepted cannot exceed applied", !!r.error, r);
+r = await as("client", `select * from public.historical_funnel_counts`);
+check("client cannot read past counts", r.rows?.length === 0, r);
+r = await as("anon", `select * from public.historical_funnel_counts`);
+check("visitors cannot query past counts", !!r.error, r);
 
 console.log(failed ? `\n${failed} check(s) failed` : "\nAll checks passed");
 process.exit(failed ? 1 : 0);
